@@ -52,7 +52,11 @@ macro_rules! define_currency_set {
                     use $crate::{Locale, FormattableCurrency, Locale::*};
                     use std::fmt;
 
+					#[cfg(feature = "serde")]
+					use serde::{Serialize, Deserialize};
+
                     #[derive(Debug, PartialEq, Eq, Clone, Copy)]
+					#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
                     pub struct Currency {
                         pub code: &'static str,
                         pub exponent: u32,

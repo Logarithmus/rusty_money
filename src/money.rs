@@ -1,13 +1,11 @@
 use crate::{
     currency::FormattableCurrency,
     format::{Formatter, Params, Position},
-    iso,
     locale::LocalFormat,
     MoneyError,
 };
 use rust_decimal::Decimal;
 use rust_decimal_macros::*;
-use serde::{ser::SerializeStruct, Deserialize, Deserializer, Serialize, Serializer};
 use std::{
     cmp::Ordering,
     fmt,
@@ -15,15 +13,104 @@ use std::{
     str::FromStr,
 };
 
+#[cfg(feature = "serde")]
+use serde::{
+    de::{self, MapAccess, SeqAccess, Visitor},
+    Deserialize, Deserializer, Serialize,
+};
+
+#[cfg(feature = "serde")]
+use core::marker::PhantomData;
+
+// #[cfg(feature = "iso")]
+// use crate::iso;
+//
+// #[cfg(feature = "crypto")]
+// use crate::crypto;
+
 /// Represents an amount of a given currency.
 ///
 /// Money represents financial amounts through a Decimal (owned) and a Currency (reference).
 /// Operations on Money objects always create new instances of Money, with the exception
 /// of `round()`.
 #[derive(Debug, PartialEq, Eq, Clone)]
-pub struct Money<'a, T: FormattableCurrency> {
+#[cfg_attr(feature = "serde", derive(Serialize))]
+pub struct Money<'a, C: FormattableCurrency> {
     amount: Decimal,
-    currency: &'a T,
+    currency: &'a C,
+}
+
+#[cfg(feature = "serde")]
+trait DeserializableCurrency: FormattableCurrency + Deserialize<'static> {}
+
+#[cfg(feature = "serde")]
+struct MoneyVisitor<C: 'static + FormattableCurrency>(PhantomData<C>)
+where
+    &'static C: Deserialize<'static>;
+
+#[cfg(feature = "serde")]
+#[derive(Deserialize)]
+#[serde(field_identifier, rename_all = "lowercase")]
+enum Field {
+    Amount,
+    Currency,
+}
+
+#[cfg(feature = "serde")]
+impl<C: FormattableCurrency> Visitor<'static> for MoneyVisitor<C>
+where
+    &'static C: Deserialize<'static>,
+{
+    type Value = Money<'static, C>;
+
+    fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+        formatter.write_str("struct Money with ISO currency")
+    }
+
+    fn visit_seq<V: SeqAccess<'static>>(self, mut seq: V) -> Result<Self::Value, V::Error> {
+        let amount = seq
+            .next_element()?
+            .ok_or_else(|| de::Error::invalid_length(0, &self))?;
+        let currency = seq
+            .next_element()?
+            .ok_or_else(|| de::Error::invalid_length(1, &self))?;
+        Ok(Money { amount, currency })
+    }
+
+    fn visit_map<V: MapAccess<'static>>(self, mut map: V) -> Result<Self::Value, V::Error> {
+        let mut amount = None;
+        let mut currency = None;
+        while let Some(key) = map.next_key()? {
+            match key {
+                Field::Amount => {
+                    if amount.is_some() {
+                        return Err(de::Error::duplicate_field("amount"));
+                    }
+                    amount = Some(map.next_value()?);
+                }
+                Field::Currency => {
+                    if currency.is_some() {
+                        return Err(de::Error::duplicate_field("currency"));
+                    }
+                    currency = Some(map.next_value()?);
+                }
+            }
+        }
+        let amount = amount.ok_or_else(|| de::Error::missing_field("amount"))?;
+        let currency = currency.ok_or_else(|| de::Error::missing_field("currency"))?;
+        Ok(Money { amount, currency })
+    }
+}
+
+#[cfg(feature = "serde")]
+impl<C: FormattableCurrency> Deserialize<'static> for Money<'static, C>
+where
+    &'static C: Deserialize<'static>,
+{
+    fn deserialize<D: Deserializer<'static>>(deserializer: D) -> Result<Self, D::Error> {
+        const FIELDS: &[&str] = &["amount", "currency"];
+        deserializer.deserialize_struct("Money", FIELDS, MoneyVisitor::<C>(PhantomData))
+    }
 }
 
 impl<'a, T: FormattableCurrency> Add for Money<'a, T> {

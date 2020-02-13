@@ -1,7 +1,14 @@
 /// ISO-4217 Currency Set
+#[cfg(feature = "iso")]
 pub mod iso {
     use crate::{FormattableCurrency, Locale, Locale::*};
     use std::fmt;
+
+    #[cfg(feature = "serde")]
+    use serde::{
+        de::{self, Visitor},
+        Deserialize, Deserializer, Serialize, Serializer,
+    };
 
     /// Represents a single ISO-4217 currency (e.g. USD).
     #[derive(Debug, PartialEq, Eq, Clone, Copy)]
@@ -14,6 +21,37 @@ pub mod iso {
         pub name: &'static str,
         pub symbol: &'static str,
         pub symbol_first: bool,
+    }
+
+    #[cfg(feature = "serde")]
+    impl<'a> Serialize for Currency {
+        fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+            serializer.serialize_str(self.iso_alpha_code)
+        }
+    }
+
+    #[cfg(feature = "serde")]
+    struct IsoCodeVisitor;
+
+    #[cfg(feature = "serde")]
+    impl<'de> Visitor<'de> for IsoCodeVisitor {
+        type Value = &'static Currency;
+
+        fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+            formatter.write_str("a string with 3-letter ISO 4217 currency code")
+        }
+
+        fn visit_str<E: de::Error>(self, value: &str) -> Result<Self::Value, E> {
+            find_by_alpha_code(value)
+                .ok_or_else(|| de::Error::custom(format!("ISO currency {} not found", value)))
+        }
+    }
+
+    #[cfg(feature = "serde")]
+    impl<'de> Deserialize<'de> for &'static Currency {
+        fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+            deserializer.deserialize_str(IsoCodeVisitor)
+        }
     }
 
     impl FormattableCurrency for Currency {
