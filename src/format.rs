@@ -1,5 +1,4 @@
-use crate::currency::FormattableCurrency;
-use crate::{Money, Round};
+use crate::{currency::FormattableCurrency, Money, Round};
 use std::cmp::Ordering;
 
 /// Converts Money objects into human readable strings.

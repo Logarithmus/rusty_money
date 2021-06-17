@@ -1,13 +1,19 @@
-use crate::currency::FormattableCurrency;
-use crate::format::{Formatter, Params, Position};
-use crate::locale::LocalFormat;
-use crate::MoneyError;
+use crate::{
+    currency::FormattableCurrency,
+    format::{Formatter, Params, Position},
+    iso,
+    locale::LocalFormat,
+    MoneyError,
+};
 use rust_decimal::Decimal;
 use rust_decimal_macros::*;
-use std::cmp::Ordering;
-use std::fmt;
-use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Sub, SubAssign};
-use std::str::FromStr;
+use serde::{ser::SerializeStruct, Deserialize, Deserializer, Serialize, Serializer};
+use std::{
+    cmp::Ordering,
+    fmt,
+    ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Sub, SubAssign},
+    str::FromStr,
+};
 
 /// Represents an amount of a given currency.
 ///

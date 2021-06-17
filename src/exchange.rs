@@ -1,5 +1,4 @@
-use crate::currency::FormattableCurrency;
-use crate::{Money, MoneyError};
+use crate::{currency::FormattableCurrency, Money, MoneyError};
 use rust_decimal::Decimal;
 use std::collections::HashMap;
 
