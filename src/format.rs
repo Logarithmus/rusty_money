@@ -143,7 +143,7 @@ mod tests {
 
     #[test]
     fn format_position() {
-        let _usd = test::find("USD"); // Prevents unused code warnings from the defined module.
+        let _usd = test::find_by_code("USD"); // Prevents unused code warnings from the defined module.
 
         let money = Money::from_major(-1000, test::USD);
 

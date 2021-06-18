@@ -101,7 +101,7 @@ macro_rules! define_currency_set {
                         };
                     )+
 
-                    pub fn find(code: &str) -> Option<&'static self::Currency> {
+                    pub fn find_by_code(code: &str) -> Option<&'static Currency> {
                         match code {
                             $($code => (Some($currency)),)+
                             _ => None,
@@ -153,7 +153,7 @@ mod tests {
 
     #[test]
     fn find_works_in_modules() {
-        assert_eq!(real::find("USD").unwrap().code, "USD");
-        assert_eq!(magic::find("FOO").unwrap().code, "FOO");
+        assert_eq!(real::find_by_code("USD").unwrap().code, "USD");
+        assert_eq!(magic::find_by_code("FOO").unwrap().code, "FOO");
     }
 }

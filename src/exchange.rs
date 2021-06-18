@@ -101,9 +101,9 @@ mod tests {
 
     #[test]
     fn exchange_stores_rates() {
-        let usd = test::find("USD").unwrap();
-        let eur = test::find("EUR").unwrap();
-        let gbp = test::find("GBP").unwrap();
+        let usd = test::find_by_code("USD").unwrap();
+        let eur = test::find_by_code("EUR").unwrap();
+        let gbp = test::find_by_code("GBP").unwrap();
 
         let eur_usd_rate = ExchangeRate::new(usd, eur, dec!(1.5)).unwrap();
         let eur_gbp_rate = ExchangeRate::new(usd, gbp, dec!(1.6)).unwrap();

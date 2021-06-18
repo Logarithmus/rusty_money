@@ -419,7 +419,7 @@ mod tests {
 
     #[test]
     fn money_major_minor() {
-        let _usd = test::find("USD"); // Prevents unused code warnings from the defined module.
+        let _usd = test::find_by_code("USD"); // Prevents unused code warnings from the defined module.
         let major_usd = Money::from_major(10, test::USD);
         let minor_usd = Money::from_minor(1000, test::USD);
         assert_eq!(major_usd, minor_usd);
