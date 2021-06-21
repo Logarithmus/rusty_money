@@ -41,12 +41,12 @@ pub struct Money<'a, C: FormattableCurrency> {
 }
 
 #[cfg(feature = "serde")]
-trait DeserializableCurrency: FormattableCurrency + Deserialize<'static> {}
+trait DeserializableCurrency<'de>: FormattableCurrency + Deserialize<'de> {}
 
 #[cfg(feature = "serde")]
-struct MoneyVisitor<C: 'static + FormattableCurrency>(PhantomData<C>)
+struct MoneyVisitor<'de, C: 'de + FormattableCurrency>(PhantomData<&'de C>)
 where
-    &'static C: Deserialize<'static>;
+    &'de C: Deserialize<'de>;
 
 #[cfg(feature = "serde")]
 #[derive(Deserialize)]
@@ -57,17 +57,17 @@ enum Field {
 }
 
 #[cfg(feature = "serde")]
-impl<C: FormattableCurrency> Visitor<'static> for MoneyVisitor<C>
+impl<'de, C: FormattableCurrency> Visitor<'de> for MoneyVisitor<'de, C>
 where
-    &'static C: Deserialize<'static>,
+    &'de C: Deserialize<'de>,
 {
-    type Value = Money<'static, C>;
+    type Value = Money<'de, C>;
 
     fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
         formatter.write_str("struct Money with ISO currency")
     }
 
-    fn visit_seq<V: SeqAccess<'static>>(self, mut seq: V) -> Result<Self::Value, V::Error> {
+    fn visit_seq<V: SeqAccess<'de>>(self, mut seq: V) -> Result<Self::Value, V::Error> {
         let amount = seq
             .next_element()?
             .ok_or_else(|| de::Error::invalid_length(0, &self))?;
@@ -77,7 +77,7 @@ where
         Ok(Money { amount, currency })
     }
 
-    fn visit_map<V: MapAccess<'static>>(self, mut map: V) -> Result<Self::Value, V::Error> {
+    fn visit_map<V: MapAccess<'de>>(self, mut map: V) -> Result<Self::Value, V::Error> {
         let mut amount = None;
         let mut currency = None;
         while let Some(key) = map.next_key()? {
@@ -103,11 +103,11 @@ where
 }
 
 #[cfg(feature = "serde")]
-impl<C: FormattableCurrency> Deserialize<'static> for Money<'static, C>
+impl<'de, C: FormattableCurrency> Deserialize<'de> for Money<'de, C>
 where
-    &'static C: Deserialize<'static>,
+    &'de C: Deserialize<'de>,
 {
-    fn deserialize<D: Deserializer<'static>>(deserializer: D) -> Result<Self, D::Error> {
+    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
         const FIELDS: &[&str] = &["amount", "currency"];
         deserializer.deserialize_struct("Money", FIELDS, MoneyVisitor::<C>(PhantomData))
     }

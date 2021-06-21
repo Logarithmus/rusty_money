@@ -35,7 +35,7 @@ pub mod iso {
 
     #[cfg(feature = "serde")]
     impl<'de> Visitor<'de> for IsoCodeVisitor {
-        type Value = &'static Currency;
+        type Value = &'de Currency;
 
         fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
             formatter.write_str("a string with 3-letter ISO 4217 currency code")
@@ -48,7 +48,7 @@ pub mod iso {
     }
 
     #[cfg(feature = "serde")]
-    impl<'de> Deserialize<'de> for &'static Currency {
+    impl<'de> Deserialize<'de> for &'de Currency {
         fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
             deserializer.deserialize_str(IsoCodeVisitor)
         }
